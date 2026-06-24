@@ -45,7 +45,7 @@ Not finalized — `secrets_registry.py` hasn't been built yet (encryption/infra 
 |---|---|---|
 | Raspberry Pi (`aarch64`) | ✅ | ✅ confirmed 2026-06-24 |
 | N150 mini PC (x86_64 Linux, assumed) | ✅ | ✅ confirmed 2026-06-24 |
-| Windows 10 (x86_64) | ✅ | ⬜ not yet run |
+| Windows 10 (x86_64) | ✅ | ⏸️ deferred — Hermes Desktop not yet installed on that box |
 | WSL (Linux under Windows) | ✅ | ✅ confirmed 2026-06-24 |
 
 ## Validation procedure — replicate this on your platform
