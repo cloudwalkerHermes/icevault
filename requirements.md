@@ -35,9 +35,7 @@
 
 ## Python dependencies (pip-installable)
 
-Not finalized — `secrets_registry.py` hasn't been built yet (encryption/infra validated first, registry layer is next per the build-order decision). Placeholder for now:
-
-- `PyYAML` — likely needed once the registry layer parses decrypted YAML content.
+**None.** `secrets_registry.py`/`vault_core.py` (built 2026-06-24) use `sops --extract` to decrypt one value at a time directly via subprocess — no YAML parsing happens in Python at all, so no `PyYAML` or any other pip package is needed. Standard library only (`subprocess`, `pathlib`, `platform`, `shutil`, `urllib.request`, `tarfile`, `zipfile`).
 
 ## Platform validation status
 

@@ -1,0 +1,9 @@
+# Downloaded by bootstrap.py -- platform-specific, large, redownloadable.
+bin/
+
+# Real per-environment age keys -- never committed. Only demo_age_key.txt
+# (which protects nothing but the EXAMPLE_KEY demo value) is checked in.
+*.age_key.txt
+age_key.txt
+__pycache__/
+*.pyc
