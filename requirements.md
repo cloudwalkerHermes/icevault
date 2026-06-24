@@ -44,7 +44,7 @@ Not finalized — `secrets_registry.py` hasn't been built yet (encryption/infra 
 | Platform | Binaries confirmed to exist | Round-trip actually tested |
 |---|---|---|
 | Raspberry Pi (`aarch64`) | ✅ | ✅ confirmed 2026-06-24 |
-| N150 mini PC (x86_64 Linux, assumed) | ✅ | ⬜ not yet run |
+| N150 mini PC (x86_64 Linux, assumed) | ✅ | ✅ confirmed 2026-06-24 |
 | Windows 10 (x86_64) | ✅ | ⬜ not yet run |
 | WSL (Linux under Windows) | ✅ | ✅ confirmed 2026-06-24 |
 
