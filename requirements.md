@@ -46,11 +46,11 @@ Not finalized — `secrets_registry.py` hasn't been built yet (encryption/infra 
 | Raspberry Pi (`aarch64`) | ✅ | ✅ confirmed 2026-06-24 |
 | N150 mini PC (x86_64 Linux, assumed) | ✅ | ⬜ not yet run |
 | Windows 10 (x86_64) | ✅ | ⬜ not yet run |
-| WSL (Linux under Windows) | ✅ | ⬜ not yet run |
+| WSL (Linux under Windows) | ✅ | ✅ confirmed 2026-06-24 |
 
 ## Validation procedure — replicate this on your platform
 
-If you're a Claude/Hermes instance on a different machine reading this file: run the matching block below exactly as written, then report the result (specifically: did the final `diff`/`Compare-Object` print nothing / say "ROUND-TRIP CONFIRMED IDENTICAL"?) back to the operator, and update the status table above. Everything downloads to a scratch directory and is deleted at the end — nothing is installed system-wide, no sudo/admin required.
+If you're a Claude/Hermes instance on a different machine reading this file: run the matching block below exactly as written, then **report the result back to the operator rather than pushing a commit yourself** — one coordinating session owns writes to this repo, so multiple validating instances don't risk colliding on the same file. Everything downloads to a scratch directory and is deleted at the end — nothing is installed system-wide, no sudo/admin required.
 
 ### Linux / WSL (bash) — covers N150 and WSL
 
