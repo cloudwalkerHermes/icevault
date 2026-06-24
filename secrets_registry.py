@@ -14,21 +14,25 @@ Adding a new secret:
      checks your proposed name against every name already below,
      normalized (case/underscores stripped), and refuses if it's a
      near-duplicate of something that already exists.
-  2. Add the real value to secrets.enc.yaml via `sops secrets.enc.yaml`
-     (opens decrypted in your editor, re-encrypts on save) -- a human
-     does this step, never an agent; see requirements.md.
+  2. Add the real value via `python3 manage_secrets.py` (handles
+     first-time key/file creation, then opens your editor) -- a human
+     does this step, never an agent; see README.md.
   3. Add the getter function here, following the existing pattern.
   4. Verify blind: call the getter, confirm it returns something
      truthy, without ever printing/logging the actual value.
 """
+from pathlib import Path
 from vault_core import decrypt_value
+
+_DEMO_SECRETS_FILE = Path(__file__).parent / "demo" / "demo_secrets.enc.yaml"
 
 
 def get_example_key() -> str:
     """
-    Template/example only -- demonstrates the pattern. Not a real
-    secret. Replace or remove once real secrets are added; this
-    exists so the mechanism is provably exercised end-to-end before
-    anything real depends on it.
+    Template/example only -- demonstrates the pattern, reading from
+    demo/demo_secrets.enc.yaml (its own demo key, its own demo file --
+    deliberately separate from the real secrets.enc.yaml so adding
+    real secrets can never collide with or overwrite this demo).
+    Replace or remove once real secrets are added.
     """
-    return decrypt_value("EXAMPLE_KEY")
+    return decrypt_value("EXAMPLE_KEY", secrets_file=_DEMO_SECRETS_FILE)
