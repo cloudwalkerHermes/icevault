@@ -69,3 +69,9 @@ def get_kalshi_api_key_id() -> str:
 def get_telegram_bot_token() -> str:
     """Telegram bot token used for EV+ report / observation messages."""
     return decrypt_value("TELEGRAM_BOT_TOKEN")
+
+
+def get_sudo_password() -> str:
+    """Local sudo password. Protects where it's stored, not what it grants --
+    hermes still has unrestricted sudo-group membership; see project_sudoers_setup."""
+    return decrypt_value("SUDO_PASSWORD")
