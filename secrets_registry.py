@@ -54,3 +54,8 @@ def get_example_multiline_key() -> str:
 def get_oddsapi_key() -> str:
     """OddsAPI paid-plan key, used by KalshiHermes's odds scrapers."""
     return decrypt_value("ODDSAPI_KEY")
+
+
+def get_kalshi_pem() -> str:
+    """Kalshi RSA private key, used to sign trading API requests."""
+    return decrypt_file_secret("KALSHI_PEM")
