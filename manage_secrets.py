@@ -18,12 +18,24 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from vault_core import ICEVAULT_DIR, BIN_DIR, _sops_binary, _is_windows
 
 AGE_KEY_FILE = ICEVAULT_DIR / "age_key.txt"
 SECRETS_FILE = ICEVAULT_DIR / "secrets.enc.yaml"
+
+# sops' own default scaffold for a brand-new file is a generic
+# "Welcome to SOPS!" template with example_key/example_array/etc --
+# confusing on a first encounter and has nothing to do with icevault.
+# We avoid it entirely by encrypting our own clean starter content
+# instead of letting sops seed the file itself.
+_STARTER_CONTENT = (
+    "# Replace the line below with your real secret(s), one per line,\n"
+    "# in the form KEY_NAME: value -- then save and close.\n"
+    "REPLACE_ME: replace-this-placeholder-with-a-real-value\n"
+)
 
 
 def _age_keygen_binary() -> str:
@@ -60,6 +72,28 @@ def ensure_key() -> str:
     return lines[0].split()[-1]
 
 
+def _create_with_clean_starter(pubkey: str, env: dict) -> int:
+    """Encrypts our own minimal starter content instead of letting sops
+    seed the file with its generic 'Welcome to SOPS!' example template
+    (example_key/example_array/example_booleans -- confusing on a
+    first encounter, nothing to do with icevault)."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as tmp:
+        tmp.write(_STARTER_CONTENT)
+        tmp_path = tmp.name
+    try:
+        with open(SECRETS_FILE, "w") as out:
+            result = subprocess.run(
+                [_sops_binary(), "--age", pubkey, "-e", tmp_path],
+                stdout=out, stderr=subprocess.PIPE, text=True, env=env,
+            )
+        if result.returncode != 0:
+            SECRETS_FILE.unlink(missing_ok=True)
+            raise RuntimeError(f"icevault: failed to create {SECRETS_FILE.name}: {result.stderr.strip()}")
+    finally:
+        os.unlink(tmp_path)
+    return result.returncode
+
+
 def main():
     env = os.environ.copy()
     env["SOPS_AGE_KEY_FILE"] = str(AGE_KEY_FILE)
@@ -67,14 +101,11 @@ def main():
 
     if not SECRETS_FILE.exists():
         print(f"\n{SECRETS_FILE.name} doesn't exist yet -- creating it now.")
-        print("Your editor will open. Add your first secret as:")
-        print("  KEY_NAME: the-real-value")
-        print("then save and close.\n")
-        result = subprocess.run([_sops_binary(), "--age", pubkey, str(SECRETS_FILE)], env=env)
-    else:
-        print(f"Opening {SECRETS_FILE.name} for editing...")
-        result = subprocess.run([_sops_binary(), str(SECRETS_FILE)], env=env)
+        _create_with_clean_starter(pubkey, env)
+        print("Created. Opening it now -- replace the placeholder line with your")
+        print("real secret(s), one per line, as KEY_NAME: value, then save and close.\n")
 
+    result = subprocess.run([_sops_binary(), str(SECRETS_FILE)], env=env)
     sys.exit(result.returncode)
 
 
