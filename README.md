@@ -37,6 +37,12 @@ Every run after that: just opens the existing `secrets.enc.yaml` in your editor 
 
 **Back up `age_key.txt` somewhere safe the moment it's generated** (your personal password manager, not this repo). There's no recovery without it — lose the key, lose access to everything encrypted with it. This is the literal cold-wallet-seed-phrase tradeoff: maximum security, zero forgiveness for losing the key.
 
+**⚠️ Multi-line secrets (PEM keys, certs, anything with embedded newlines) are genuinely painful right now — don't expect a good time.** `manage_secrets.py` only gives you a plain interactive `sops` editor session, which means YAML's literal block-scalar syntax (`KEY: |` followed by every line indented the same amount) has to be typed or pasted *by hand, correctly indented, every single line*. One line that loses its indentation during paste (extremely easy to do in a terminal editor) breaks the whole file's YAML parsing (`yaml: line N: could not find expected ':'`), and `sops` will loop you through a "fix it or abort" retry prompt until it's valid. Real incident, 2026-06-25: this happened on a first real attempt with a Kalshi PEM key, compounded by a scary-looking (but harmless) `KeyboardInterrupt` traceback on exit — confirmed afterward the real `secrets.enc.yaml` was completely untouched throughout (sops never writes back invalid YAML), but the experience itself was bad enough that the migration got abandoned rather than retried.
+
+If you hit this: **Ctrl+C out, don't panic** — nothing is corrupted, sops only writes back after successfully parsing valid YAML, so an aborted attempt leaves the real file exactly as it was. You can verify this yourself without ever touching a real value: `grep -E "^[A-Za-z_]+:" secrets.enc.yaml` shows key names only (cleartext, safe), confirming the file's structure is intact.
+
+There's no good fix shipped for this yet. The right one (scoped, not built): a small utility that takes raw multi-line content from a plain file (no YAML formatting required from the human at all) and merges it into the encrypted vault programmatically, so indentation is never hand-typed. Until that exists, either accept the risk above going in with eyes open, or just don't put multi-line secrets in icevault yet.
+
 ### Adding a secret an agent will use
 
 1. **Collision check first** — `python3 collision_check.py get_your_proposed_name`. If it flags a near-duplicate of something that already exists, reuse that instead of adding a new one.
