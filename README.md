@@ -33,6 +33,8 @@ First run: generates a real `age` keypair at `age_key.txt` (gitignored — never
 
 Every run after that: just opens the existing `secrets.enc.yaml` in your editor (decrypted), so you can add or change values. Saving re-encrypts automatically — `sops` handles that, you never touch ciphertext directly.
 
+**⚠️ You must save and exit your editor cleanly for the encryption to actually fire.** `sops` decrypts to a temporary file, hands it to your `$EDITOR`, and only re-encrypts back into `secrets.enc.yaml` on a clean exit. If the editor exits uncleanly (a crash, a force-kill, an editor error) the real file is **not** updated — your change silently never happened. If you're not sure your last edit actually landed, check whether the key name you expect shows up: `grep -E "^[A-Za-z_]+:" secrets.enc.yaml` (safe to run — that only shows key *names* in cleartext, values stay encrypted). If it's not there, just redo the entry.
+
 **Back up `age_key.txt` somewhere safe the moment it's generated** (your personal password manager, not this repo). There's no recovery without it — lose the key, lose access to everything encrypted with it. This is the literal cold-wallet-seed-phrase tradeoff: maximum security, zero forgiveness for losing the key.
 
 ### Adding a secret an agent will use
