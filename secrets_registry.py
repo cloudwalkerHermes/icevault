@@ -75,3 +75,8 @@ def get_sudo_password() -> str:
     """Local sudo password. Protects where it's stored, not what it grants --
     hermes still has unrestricted sudo-group membership; see project_sudoers_setup."""
     return decrypt_value("SUDO_PASSWORD")
+
+
+def get_db_password() -> str:
+    """Postgres password for the kalshi_memory database (localhost-only)."""
+    return decrypt_value("DB_PASSWORD")
