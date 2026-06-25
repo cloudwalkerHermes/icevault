@@ -64,3 +64,8 @@ def get_kalshi_pem() -> str:
 def get_kalshi_api_key_id() -> str:
     """Kalshi API key ID (UUID), paired with get_kalshi_pem() for every signed request."""
     return decrypt_value("KALSHI_API_KEY_ID")
+
+
+def get_telegram_bot_token() -> str:
+    """Telegram bot token used for EV+ report / observation messages."""
+    return decrypt_value("TELEGRAM_BOT_TOKEN")
