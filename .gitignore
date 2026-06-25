@@ -12,5 +12,10 @@ age_key.txt
 # gets its own local secrets.enc.yaml -- it should never travel with the tool.
 secrets.enc.yaml
 
+# Real per-environment multi-line secrets (PEM keys, certs, etc) -- same
+# reasoning as secrets.enc.yaml above. Only demo/demo_multiline_secret.enc
+# is checked in.
+multiline/
+
 __pycache__/
 *.pyc

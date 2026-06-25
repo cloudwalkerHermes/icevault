@@ -17,9 +17,9 @@ python3 bootstrap.py   # downloads sops + age into bin/ for your platform, no su
 Try the demo (proves the mechanism works without touching anything real):
 
 ```bash
-SOPS_AGE_KEY_FILE=demo/demo_age_key.txt python3 -c "from secrets_registry import get_example_key; print(bool(get_example_key()))"
+SOPS_AGE_KEY_FILE=demo/demo_age_key.txt python3 -c "from secrets_registry import get_example_key, get_example_multiline_key; print(bool(get_example_key()), bool(get_example_multiline_key()))"
 ```
-Should print `True`. The demo key/file only protect a fake placeholder value — safe to commit, safe to ignore, never used for anything real.
+Should print `True True`. The demo key/files only protect fake placeholder values — safe to commit, safe to ignore, never used for anything real.
 
 ## Setting up your own real vault (the "human bridge" step)
 
@@ -33,36 +33,50 @@ First run: generates a real `age` keypair at `age_key.txt` (gitignored — never
 
 Every run after that: just opens the existing `secrets.enc.yaml` in your editor (decrypted), so you can add or change values. Saving re-encrypts automatically — `sops` handles that, you never touch ciphertext directly.
 
+If `$EDITOR` isn't set in your shell, `sops` will fall back to `vi`. If you're not comfortable in `vi`, set a friendlier editor first: `export EDITOR=nano` (or your preference) before running `manage_secrets.py`.
+
 **⚠️ You must save and exit your editor cleanly for the encryption to actually fire.** `sops` decrypts to a temporary file, hands it to your `$EDITOR`, and only re-encrypts back into `secrets.enc.yaml` on a clean exit. If the editor exits uncleanly (a crash, a force-kill, an editor error) the real file is **not** updated — your change silently never happened. If you're not sure your last edit actually landed, check whether the key name you expect shows up: `grep -E "^[A-Za-z_]+:" secrets.enc.yaml` (safe to run — that only shows key *names* in cleartext, values stay encrypted). If it's not there, just redo the entry.
 
 **Back up `age_key.txt` somewhere safe the moment it's generated** (your personal password manager, not this repo). There's no recovery without it — lose the key, lose access to everything encrypted with it. This is the literal cold-wallet-seed-phrase tradeoff: maximum security, zero forgiveness for losing the key.
 
-**⚠️ Multi-line secrets (PEM keys, certs, anything with embedded newlines) are not a supported design consideration right now — don't attempt this.** `manage_secrets.py` only gives you a plain interactive `sops` editor session, which means YAML's literal block-scalar syntax (`KEY: |` followed by every line indented the same amount) would have to be typed or pasted *by hand, correctly indented, every single line* — nothing in icevault was built to handle this case, and it isn't a "proceed carefully" situation, it's an unsupported one. Real incident, 2026-06-25: a first real attempt with a Kalshi PEM key broke YAML parsing (`yaml: line N: could not find expected ':'`) on a lost-indentation paste, compounded by a scary-looking (but harmless) `KeyboardInterrupt` traceback on exit. The real `secrets.enc.yaml` was confirmed completely untouched afterward (sops never writes back invalid YAML) — but the migration was abandoned rather than retried, and that's the right call until this is actually built, not worked around in the moment.
+### Multi-line secrets (PEM keys, certs, anything with embedded newlines)
 
-If you've already hit this: **Ctrl+C out, don't panic** — nothing is corrupted, sops only writes back after successfully parsing valid YAML, so an aborted attempt leaves the real file exactly as it was. Verify without ever touching a real value: `grep -E "^[A-Za-z_]+:" secrets.enc.yaml` shows key names only (cleartext, safe), confirming the file's structure is intact.
+**Use a separate tool: `manage_multiline_secret.py`, not `manage_secrets.py`.**
 
-**Wait for someone to actually code multi-line support in before trying again.** The right design (scoped, not built): a small utility that takes raw multi-line content from a plain file — no YAML formatting required from the human at all — and merges it into the encrypted vault programmatically. Until that exists, single-line secrets only.
+```bash
+python3 manage_multiline_secret.py KEY_NAME
+```
+
+This exists because of a real incident (2026-06-25): pasting a multi-line PEM directly into `manage_secrets.py`'s YAML editor broke (`yaml: line N: could not find expected ':'`) on a lost-indentation paste — hand-indenting a YAML literal block scalar correctly, line by line, in an interactive editor is a genuine trap, not user error. The fix isn't to remove the human from typing the value in — it's to remove the YAML structure entirely, so there's nothing to indent in the first place.
+
+Each multi-line secret gets its **own standalone encrypted file** under `multiline/<KEY_NAME>.enc`, using `sops`' binary mode: the whole file is one raw opaque blob, no YAML/JSON structure at all. You still open a real editor and paste your secret in by hand, exactly like `manage_secrets.py` — just into a genuinely blank file with nothing to format, instead of a YAML document with indentation rules. First run for a given name creates it blank; running the same name again reopens it with whatever you last saved, so you can correct it.
+
+This also means a botched edit on one multi-line secret **cannot corrupt another** — they're separate files, never parsed or re-encrypted together, unlike the single shared `secrets.enc.yaml`.
+
+Getters use `decrypt_file_secret(name)` instead of `decrypt_value(name)` — see `get_oddsapi_key()` vs. `get_example_multiline_key()` in `secrets_registry.py` for the pattern. Same collision-check step applies before naming one.
 
 ### Adding a secret an agent will use
 
 1. **Collision check first** — `python3 collision_check.py get_your_proposed_name`. If it flags a near-duplicate of something that already exists, reuse that instead of adding a new one.
-2. **You add the real value** — `python3 manage_secrets.py`, add `KEY_NAME: value` in the editor, save. The agent should tell you exactly what key name to use; it should never type the value itself or ask you to paste it anywhere except directly into your own editor session.
+2. **You add the real value** — `python3 manage_secrets.py` for single-line, or `python3 manage_multiline_secret.py KEY_NAME` for anything with embedded newlines. The agent should tell you exactly what key name to use; it should never type the value itself or ask you to paste it anywhere except directly into your own editor session.
 3. **The agent adds the getter** in `secrets_registry.py` — references only the key *name*, never the value:
    ```python
    def get_your_new_thing() -> str:
-       return decrypt_value("KEY_NAME")
+       return decrypt_value("KEY_NAME")              # single-line
+       # or: return decrypt_file_secret("KEY_NAME")   # multi-line
    ```
 4. **Verify blind** — call the getter, confirm it returns something truthy, without ever printing or logging the actual value.
 
 ## How it works under the hood
 
 - `bootstrap.py` — fetches the right `sops`/`age` binaries for your platform into `bin/` (gitignored, large and platform-specific). Idempotent, no sudo/admin.
-- `vault_core.py` — the low-level decrypt wrapper. Calls `sops --extract` to pull exactly one value at a time; never decrypts the whole file, never holds plaintext anywhere but transiently in the calling process's memory.
+- `vault_core.py` — the low-level decrypt wrapper. `decrypt_value()` calls `sops --extract` to pull exactly one value at a time from the shared YAML file; `decrypt_file_secret()` decrypts a standalone binary-mode file for multi-line secrets. Neither ever decrypts more than one secret's worth of plaintext, never holds it anywhere but transiently in the calling process's memory.
 - `secrets_registry.py` — the actual named getters. This file *is* the human-readable, canonical list of every secret icevault manages — read it, don't grep for string literals scattered elsewhere.
 - `collision_check.py` — normalized-name collision detector (case/underscores stripped before comparing), run before adding any new getter.
-- `manage_secrets.py` — the human-facing helper for the real vault: auto-generates the key and creates the file on first use, otherwise just opens it for editing. Never touches a plaintext value itself.
-- `secrets.enc.yaml` / `age_key.txt` — your real vault and key. Gitignored, created locally, never committed. (Not present in a fresh clone — that's correct; `manage_secrets.py` creates them.)
-- `demo/` — a self-contained example proving the mechanism works, safe to commit since it only protects a fake value.
+- `manage_secrets.py` — the human-facing helper for single-line secrets in the shared vault: auto-generates the key and creates the file on first use, otherwise just opens it for editing. Never touches a plaintext value itself.
+- `manage_multiline_secret.py` — the human-facing helper for multi-line secrets, one standalone encrypted file per secret under `multiline/`. Same never-touches-a-plaintext-value guarantee.
+- `secrets.enc.yaml` / `age_key.txt` / `multiline/` — your real vault, key, and multi-line secrets. Gitignored, created locally, never committed. (Not present in a fresh clone — that's correct; the `manage_*` scripts create them.)
+- `demo/` — self-contained examples (single-line and multi-line) proving both mechanisms work, safe to commit since they only protect fake values.
 
 ## Design rule: this lives at `<project_root>/code/icevault/`, always
 

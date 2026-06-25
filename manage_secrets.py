@@ -15,16 +15,12 @@ Usage:
     python3 manage_secrets.py
 """
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-from vault_core import ICEVAULT_DIR, BIN_DIR, _sops_binary, _is_windows
-
-AGE_KEY_FILE = ICEVAULT_DIR / "age_key.txt"
-SECRETS_FILE = ICEVAULT_DIR / "secrets.enc.yaml"
+from vault_core import ICEVAULT_DIR, AGE_KEY_FILE, SECRETS_FILE, _sops_binary, ensure_key
 
 # sops' own default scaffold for a brand-new file is a generic
 # "Welcome to SOPS!" template with example_key/example_array/etc --
@@ -36,40 +32,6 @@ _STARTER_CONTENT = (
     "# in the form KEY_NAME: value -- then save and close.\n"
     "REPLACE_ME: replace-this-placeholder-with-a-real-value\n"
 )
-
-
-def _age_keygen_binary() -> str:
-    local = BIN_DIR / ("age-keygen.exe" if _is_windows() else "age-keygen")
-    if local.exists():
-        return str(local)
-    on_path = shutil.which("age-keygen")
-    if on_path:
-        return on_path
-    raise RuntimeError("icevault: age-keygen not found. Run `python3 bootstrap.py` first.")
-
-
-def ensure_key() -> str:
-    """Returns the public key for AGE_KEY_FILE, generating a new
-    keypair there first if one doesn't exist yet."""
-    if not AGE_KEY_FILE.exists():
-        print(f"No age key found at {AGE_KEY_FILE} -- generating one now.")
-        result = subprocess.run(
-            [_age_keygen_binary(), "-o", str(AGE_KEY_FILE)],
-            capture_output=True, text=True,
-        )
-        if result.returncode != 0:
-            raise RuntimeError(f"icevault: key generation failed: {result.stderr.strip()}")
-        if not _is_windows():
-            AGE_KEY_FILE.chmod(0o600)
-        print(f"Generated a new key at {AGE_KEY_FILE}.")
-        print("IMPORTANT: back this up somewhere safe (e.g. your personal password manager).")
-        print("Losing this file means losing access to every secret encrypted with it --")
-        print("there is no recovery without it. It is gitignored and will never be committed.")
-
-    lines = [l for l in AGE_KEY_FILE.read_text().splitlines() if "public key:" in l]
-    if not lines:
-        raise RuntimeError(f"icevault: {AGE_KEY_FILE} exists but has no recognizable public key line.")
-    return lines[0].split()[-1]
 
 
 def _create_with_clean_starter(pubkey: str, env: dict) -> int:
