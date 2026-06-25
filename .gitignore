@@ -5,5 +5,12 @@ bin/
 # (which protects nothing but the EXAMPLE_KEY demo value) is checked in.
 *.age_key.txt
 age_key.txt
+
+# Real per-environment secrets -- deployment-specific, never committed to
+# the shared icevault tool repo, even encrypted. Only demo/demo_secrets.enc.yaml
+# is checked in. If icevault is ever reused on another project, that project
+# gets its own local secrets.enc.yaml -- it should never travel with the tool.
+secrets.enc.yaml
+
 __pycache__/
 *.pyc

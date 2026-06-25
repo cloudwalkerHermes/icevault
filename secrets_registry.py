@@ -25,6 +25,7 @@ from pathlib import Path
 from vault_core import decrypt_value
 
 _DEMO_SECRETS_FILE = Path(__file__).parent / "demo" / "demo_secrets.enc.yaml"
+_DEMO_AGE_KEY_FILE = Path(__file__).parent / "demo" / "demo_age_key.txt"
 
 
 def get_example_key() -> str:
@@ -35,4 +36,9 @@ def get_example_key() -> str:
     real secrets can never collide with or overwrite this demo).
     Replace or remove once real secrets are added.
     """
-    return decrypt_value("EXAMPLE_KEY", secrets_file=_DEMO_SECRETS_FILE)
+    return decrypt_value("EXAMPLE_KEY", secrets_file=_DEMO_SECRETS_FILE, age_key_file=_DEMO_AGE_KEY_FILE)
+
+
+def get_oddsapi_key() -> str:
+    """OddsAPI paid-plan key, used by KalshiHermes's odds scrapers."""
+    return decrypt_value("ODDSAPI_KEY")
