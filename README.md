@@ -39,6 +39,12 @@ If `$EDITOR` isn't set in your shell, `sops` will fall back to `vi`. If you're n
 
 **Back up `age_key.txt` somewhere safe the moment it's generated** (your personal password manager, not this repo). There's no recovery without it — lose the key, lose access to everything encrypted with it. This is the literal cold-wallet-seed-phrase tradeoff: maximum security, zero forgiveness for losing the key.
 
+**Set permissions to `400` immediately after generation:**
+```bash
+chmod 400 age_key.txt
+```
+Owner read-only. Nothing — not another process, not a misconfigured tool, not an agent — should ever need to write to the key file after it's created.
+
 ### Multi-line secrets (PEM keys, certs, anything with embedded newlines)
 
 **Use a separate tool: `manage_multiline_secret.py`, not `manage_secrets.py`.**
