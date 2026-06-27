@@ -59,6 +59,8 @@ Each multi-line secret gets its **own standalone encrypted file** under `multili
 
 This also means a botched edit on one multi-line secret **cannot corrupt another** — they're separate files, never parsed or re-encrypted together, unlike the single shared `secrets.enc.yaml`.
 
+**Alternative: use `manage_multiline_secret.py` for everything, single-line included.** Nothing prevents this. Each secret — regardless of whether it actually contains newlines — gets its own standalone encrypted file under `multiline/`, with zero cross-contamination risk by construction and easier per-secret rotation (just replace one file). The tradeoff: `manage_secrets.py`'s convenient batch workflow (open once, paste all your keys, save) goes away — each secret requires its own invocation. Both approaches are fully supported; the split is just a preference call.
+
 Getters use `decrypt_file_secret(name)` instead of `decrypt_value(name)` — see `get_oddsapi_key()` vs. `get_example_multiline_key()` in `secrets_registry.py` for the pattern. Same collision-check step applies before naming one.
 
 ### Adding a secret an agent will use
