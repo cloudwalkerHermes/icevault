@@ -32,7 +32,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from vault_core import MULTILINE_DIR, AGE_KEY_FILE, _sops_binary, ensure_key
+from vault_core import MULTILINE_DIR, AGE_KEY_FILE, _sops_binary, ensure_key, _windows_editor
 
 
 def main():
@@ -80,7 +80,7 @@ def main():
         print(f"no formatting needed, then save and close.\n")
 
     if 'EDITOR' not in env and sys.platform == 'win32':
-        env['EDITOR'] = 'notepad'
+        env['EDITOR'] = _windows_editor()
     result = subprocess.run([_sops_binary(), "--input-type", "binary", str(target)], env=env)
     sys.exit(result.returncode)
 

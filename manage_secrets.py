@@ -20,7 +20,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from vault_core import ICEVAULT_DIR, AGE_KEY_FILE, SECRETS_FILE, _sops_binary, ensure_key
+from vault_core import ICEVAULT_DIR, AGE_KEY_FILE, SECRETS_FILE, _sops_binary, ensure_key, _windows_editor
 
 # sops' own default scaffold for a brand-new file is a generic
 # "Welcome to SOPS!" template with example_key/example_array/etc --
@@ -68,7 +68,7 @@ def main():
         print("real secret(s), one per line, as KEY_NAME: value, then save and close.\n")
 
     if 'EDITOR' not in env and sys.platform == 'win32':
-        env['EDITOR'] = 'notepad'
+        env['EDITOR'] = _windows_editor()
     result = subprocess.run([_sops_binary(), str(SECRETS_FILE)], env=env)
     sys.exit(result.returncode)
 

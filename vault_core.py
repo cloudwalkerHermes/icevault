@@ -29,6 +29,18 @@ def _is_windows() -> bool:
     return platform.system().lower() == "windows"
 
 
+def _windows_editor() -> str:
+    """Pick the best available editor on Windows when $EDITOR isn't set.
+    Tries VS Code (code --wait) then Notepad++ then falls back to notepad.
+    VS Code is strongly preferred -- it handles file save/close cleanly and
+    doesn't mangle line endings the way bare notepad can."""
+    for candidate in ("code --wait", "notepad++"):
+        exe = candidate.split()[0]
+        if shutil.which(exe):
+            return candidate
+    return "notepad"
+
+
 def _sops_binary() -> str:
     """Resolve the sops binary: prefer the bootstrapped local copy,
     fall back to PATH if someone has it installed system-wide."""
