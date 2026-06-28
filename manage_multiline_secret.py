@@ -79,6 +79,8 @@ def main():
         print(f"Created. Opening it now -- paste your secret in exactly as it exists,")
         print(f"no formatting needed, then save and close.\n")
 
+    if 'EDITOR' not in env and sys.platform == 'win32':
+        env['EDITOR'] = 'notepad'
     result = subprocess.run([_sops_binary(), "--input-type", "binary", str(target)], env=env)
     sys.exit(result.returncode)
 

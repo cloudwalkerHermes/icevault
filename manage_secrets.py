@@ -67,6 +67,8 @@ def main():
         print("Created. Opening it now -- replace the placeholder line with your")
         print("real secret(s), one per line, as KEY_NAME: value, then save and close.\n")
 
+    if 'EDITOR' not in env and sys.platform == 'win32':
+        env['EDITOR'] = 'notepad'
     result = subprocess.run([_sops_binary(), str(SECRETS_FILE)], env=env)
     sys.exit(result.returncode)
 

@@ -33,7 +33,7 @@ First run: generates a real `age` keypair at `age_key.txt` (gitignored — never
 
 Every run after that: just opens the existing `secrets.enc.yaml` in your editor (decrypted), so you can add or change values. Saving re-encrypts automatically — `sops` handles that, you never touch ciphertext directly.
 
-If `$EDITOR` isn't set in your shell, `sops` will fall back to `vi`. If you're not comfortable in `vi`, set a friendlier editor first: `export EDITOR=nano` (or your preference) before running `manage_secrets.py`.
+If `$EDITOR` isn't set in your shell, `sops` will fall back to `vi`. If you're not comfortable in `vi`, set a friendlier editor first: `export EDITOR=nano` (or your preference) before running `manage_secrets.py`. On **Windows**, `manage_secrets.py` and `manage_multiline_secret.py` automatically default to `notepad` when `EDITOR` isn't set — no manual configuration needed.
 
 **⚠️ You must save and exit your editor cleanly for the encryption to actually fire.** `sops` decrypts to a temporary file, hands it to your `$EDITOR`, and only re-encrypts back into `secrets.enc.yaml` on a clean exit. If the editor exits uncleanly (a crash, a force-kill, an editor error) the real file is **not** updated — your change silently never happened. If you're not sure your last edit actually landed, check whether the key name you expect shows up: `grep -E "^[A-Za-z_]+:" secrets.enc.yaml` (safe to run — that only shows key *names* in cleartext, values stay encrypted). If it's not there, just redo the entry.
 
